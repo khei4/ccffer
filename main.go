@@ -2,45 +2,23 @@ package main
 
 import (
 	"fmt"
-	"go/ast"
-	"go/parser"
-	"go/token"
+	"os"
+
+	"github.com/khei4/ccffer/info"
 )
 
+func genzero[T interface {
+	int
+}](a, b T) T {
+	return a / b
+}
+
 func main() {
-	fset := token.NewFileSet()
-	source := `
-	package main
-	import "fmt"
-	func main2() (){
-		fmt.Print("hello")
+	filename := "gotest"
+	info, err := info.GetInfoFromFiles(filename)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "cannot open %s", filename)
 	}
-	func main3() (){
-		fmt.Print("hola")
-	}
-	func main4() (){
-		fmt.Print("bon dia")
-	}
-	`
-	filename := "hoge.go"
-	f, err := parser.ParseFile(fset, filename, source, parser.ParseComments)
-
-	for _, dec := range f.Decls {
-		switch dec.(type) {
-		case *ast.FuncDecl:
-			fd := dec.(*ast.FuncDecl)
-			var name string = fd.Name.Name
-			fmt.Println("name=", name)
-			var ft ast.FuncType = *fd.Type
-
-			// var typeParams ast.FieldList = *ft.TypeParams
-			var argTypes ast.FieldList = *ft.Params
-			var retTypes ast.FieldList = *ft.Results
-			// fmt.Print(typeParams)
-			fmt.Println("argTypes=", argTypes)
-			fmt.Print(retTypes)
-		default:
-		}
-	}
-	_ = err
+	info.PrintFunctions(info)
+	fmt.Print(info)
 }

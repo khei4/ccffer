@@ -53,6 +53,42 @@ func PrintFunctions(info *Info) {
 	}
 }
 
+func classifyFuncDecl(dec ast.Decl, info *Info) {
+	fd := dec.(*ast.FuncDecl)
+
+	if fd.Type.TypeParams != nil {
+		info.functions.GenericFuncs = append(info.functions.GenericFuncs, fd)
+	} else if fd.Type.Params != nil {
+		info.functions.NonGenericFuncs = append(info.functions.NonGenericFuncs, fd)
+	} else {
+		info.functions.NoParamFuncs = append(info.functions.NoParamFuncs, fd)
+	}
+}
+
+// TODO:
+func classifyGenDecl(dec ast.Decl, info *Info) {
+	gd := dec.(*ast.GenDecl)
+	// Specsが一つ以上ある時とは???
+	// →type( ...) が複数あるときっぽい
+	for _, spec := range gd.Specs {
+		switch spec.(type) {
+		case *ast.TypeSpec:
+			ts := spec.(*ast.TypeSpec)
+			// Genericな変数, 構造体, Interfaceそれぞれあって
+			// このレベルでパラメータがある
+			// パラメータは別にしてもっとかん?
+			// 一旦Genericな構造体, InterfaceTypeは扱わないことに
+			if ts.TypeParams != nil {
+			}
+			switch ts.Type.(type) {
+			case *ast.StructType:
+			case *ast.InterfaceType:
+			default:
+			}
+		}
+	}
+}
+
 func GetInfoFromFiles(filename string) (*Info, error) {
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, filename, nil, parser.ParseComments)
@@ -65,17 +101,11 @@ func GetInfoFromFiles(filename string) (*Info, error) {
 	for _, dec := range f.Decls {
 		switch dec.(type) {
 		case *ast.FuncDecl:
-			fd := dec.(*ast.FuncDecl)
-
-			if fd.Type.TypeParams != nil {
-				info.functions.GenericFuncs = append(info.functions.NoParamFuncs, fd)
-			} else if fd.Type.Params != nil {
-				info.functions.NonGenericFuncs = append(info.functions.NoParamFuncs, fd)
-			} else {
-				info.functions.NoParamFuncs = append(info.functions.NoParamFuncs, fd)
-			}
-		default:
+			classifyFuncDecl(dec, info)
+		case *ast.GenDecl:
 			// TODO: get structs and interfaces
+			classifyGenDecl(dec, info)
+		default:
 		}
 	}
 	return info, nil
