@@ -21,8 +21,8 @@ func DumpAst(filename string) {
 }
 
 func main() {
-	filename := "gotest"
-	DumpAst("gotest")
+	filename := ".test.go"
+	DumpAst(".test.go")
 	srcinfo, err := info.GetInfoFromFiles(filename)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "cannot open %s", filename)
