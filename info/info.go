@@ -23,7 +23,7 @@ type Funcs struct {
 // }
 
 type Info struct {
-	functions Funcs
+	Functions Funcs
 	// structs Structs
 	// Interfaces Interfaces
 }
@@ -45,7 +45,7 @@ func printFuncDecl(fd *ast.FuncDecl) {
 }
 
 func PrintFunctions(info *Info) {
-	funcs := info.functions
+	funcs := info.Functions
 	for _, funcclass := range [][]*ast.FuncDecl{funcs.GenericFuncs, funcs.NonGenericFuncs, funcs.NoParamFuncs} {
 		for _, gf := range funcclass {
 			printFuncDecl(gf)
@@ -56,12 +56,12 @@ func PrintFunctions(info *Info) {
 func classifyFuncDecl(dec ast.Decl, info *Info) {
 	fd := dec.(*ast.FuncDecl)
 
-	if fd.Type.TypeParams != nil {
-		info.functions.GenericFuncs = append(info.functions.GenericFuncs, fd)
-	} else if fd.Type.Params != nil {
-		info.functions.NonGenericFuncs = append(info.functions.NonGenericFuncs, fd)
+	if fd.Type.TypeParams != nil { // TODO: 型引数はあっても, 引数がないのは?
+		info.Functions.GenericFuncs = append(info.Functions.GenericFuncs, fd)
+	} else if len(fd.Type.Params.List) != 0 {
+		info.Functions.NonGenericFuncs = append(info.Functions.NonGenericFuncs, fd)
 	} else {
-		info.functions.NoParamFuncs = append(info.functions.NoParamFuncs, fd)
+		info.Functions.NoParamFuncs = append(info.Functions.NoParamFuncs, fd)
 	}
 }
 
