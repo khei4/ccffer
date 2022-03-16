@@ -2,23 +2,31 @@ package main
 
 import (
 	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"os"
 
-	"github.com/khei4/ccffer/info"
+	"ccffer/info"
 )
 
-func genzero[T interface {
-	int
-}](a, b T) T {
-	return a / b
+func DumpAst(filename string) {
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, filename, nil, parser.ParseComments)
+	if err != nil {
+		panic(err)
+	}
+	ast.Print(fset, f)
+
 }
 
 func main() {
 	filename := "gotest"
-	info, err := info.GetInfoFromFiles(filename)
+	DumpAst("gotest")
+	srcinfo, err := info.GetInfoFromFiles(filename)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "cannot open %s", filename)
 	}
-	info.PrintFunctions(info)
-	fmt.Print(info)
+	info.PrintFunctions(srcinfo)
+	fmt.Print(srcinfo)
 }
