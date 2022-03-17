@@ -50,7 +50,12 @@ func getFuzzAppsFuncDecl(pkg *packages.Package, fd *ast.FuncDecl, tmplData *mode
 	gf := &model.GenFunc{FName: name}
 	// 引数が1個以上かつ, Generic
 	if fd.Type.TypeParams != nil && len(fd.Type.Params.List) != 0 {
-		// 型パラメーターに入る型を列挙する.
+
+		// 1. それぞれの型パラメーターに入る型を列挙する.
+		//		1. 型制約を取る
+		//		2. 用意した型が, その型制約を満たすかどうか判定する
+		// 2. 型を固定して, 下と同じ操作
+		// types.Instantiate()
 		// その型を固定してLoop
 		// Generic
 		// types.TypeParam
@@ -81,15 +86,14 @@ func getFuzzAppsFuncDecl(pkg *packages.Package, fd *ast.FuncDecl, tmplData *mode
 
 func GetTemplDataFromPackages(pkgnames []string) (*model.TemplData, error) {
 	cfg := &packages.Config{
-		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo,
+		Mode: packages.NeedName | packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo,
 	}
 	pkgs, err := packages.Load(cfg, pkgnames...)
 	if err != nil {
 		return nil, err
 	}
-	// TODO:単一packageを仮定
-	// とれない...
-	templData := &model.TemplData{PkgName: "test"}
+	// TODO:単一packageを仮定しているので拡張する.
+	templData := &model.TemplData{PkgName: pkgs[0].Name}
 	for _, pkg := range pkgs {
 		// templData := &model.TemplData{PkgName: pkg.Name}
 		for _, f := range pkg.Syntax {

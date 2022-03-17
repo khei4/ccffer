@@ -3,7 +3,6 @@ package testgen
 import (
 	"bytes"
 	"ccffer/model"
-	"fmt"
 	"go/format"
 	"text/template"
 
@@ -45,7 +44,7 @@ func FormatAndImport(src []byte) (string, error) {
 func GenTests(td *model.TemplData) (string, error) {
 	var testsrc bytes.Buffer
 	TestTmpl.Execute(&testsrc, td)
-	fmt.Print(testsrc.String())
+	// fmt.Print(testsrc.String())
 	return FormatAndImport(testsrc.Bytes())
 
 }
