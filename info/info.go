@@ -52,8 +52,20 @@ func getFuzzAppsFuncDecl(pkg *packages.Package, fd *ast.FuncDecl, tmplData *mode
 	if fd.Type.TypeParams != nil && len(fd.Type.Params.List) != 0 {
 
 		// 1. それぞれの型パラメーターに入る型を列挙する.
-		//		1. 型制約を取る
-		//		2. 用意した型が, その型制約を満たすかどうか判定する
+		//		1. 型パラメーターに入れられる型の候補を列挙する.
+		//		2. 型制約を満たすかどうか判定する
+		// typpnums := len(fd.Type.TypeParams.List)
+		// typecands := typecandsGen()
+		if _, err := types.Instantiate(nil, sig, []types.Type{types.Typ[types.Int]}, true); err != nil {
+			fmt.Println("can't be instantiated by int ")
+		}
+		if _, err := types.Instantiate(nil, sig, []types.Type{types.Typ[types.Bool]}, true); err != nil {
+			fmt.Println("can't be instantiated by bool")
+		}
+		if _, err := types.Instantiate(nil, sig, []types.Type{types.Typ[types.String]}, true); err != nil {
+			fmt.Println("can't be instantiated by string")
+		}
+
 		// 2. 型を固定して, 下と同じ操作
 		// types.Instantiate()
 		// その型を固定してLoop
@@ -72,6 +84,8 @@ func getFuzzAppsFuncDecl(pkg *packages.Package, fd *ast.FuncDecl, tmplData *mode
 				argcands[i] = []model.Val{"nil"}
 			case *types.Interface: //  nil + TODO
 				argcands[i] = []model.Val{"nil"}
+			case *types.TypeParam:
+				panic("broken")
 			}
 		}
 		for _, args := range argall(argcands) {
@@ -97,6 +111,7 @@ func GetTemplDataFromPackages(pkgnames []string) (*model.TemplData, error) {
 	for _, pkg := range pkgs {
 		// templData := &model.TemplData{PkgName: pkg.Name}
 		for _, f := range pkg.Syntax {
+			// ast.Print(pkg.Fset, f)
 			for _, dec := range f.Decls {
 				switch dec := dec.(type) {
 				case *ast.FuncDecl:

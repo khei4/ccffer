@@ -4,20 +4,19 @@ type X interface {
 	~int | ~string
 }
 
-// func F[T X](v T) {
-// 	println(v + v)
-// 	println(string(v))
-// 	println(any(v).(int))
-// }
-// func main() {
-// 	F(42)
-// 	F("42")
-// }
+func FG[T X](v T) {
+	println(v + v)
+	println(string(v))
+	println(any(v).(int))
+}
 
-func F(v int, s string) string {
+func F(v int, s string, f float32) string {
 	return s
 }
 
 func main() {
-	F(32, "hoge")
+	_ = struct{}{}
+	F(32, "hoge", 0)
+	FG(42)
+	FG("42")
 }
