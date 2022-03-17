@@ -9,7 +9,7 @@ import (
 
 func TestGenTests(t *testing.T) {
 	appint := &testgen.App{[]testgen.Type{"int"}, []testgen.Val{"0"}}
-	appstring := &testgen.App{[]testgen.Type{"string"}, []testgen.Val{fmt.Sprintf("%q", "")}} // TODO: ここの""が&#34;になってしまう
+	appstring := &testgen.App{[]testgen.Type{"string"}, []testgen.Val{`""`}} // TODO: ここの""が&#34;になってしまう
 	gf := testgen.GenFunc{FName: "F", Apps: []*testgen.App{appint, appstring}}
 	td := testgen.TemplData{
 		Mod:      "main",

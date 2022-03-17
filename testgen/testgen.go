@@ -1,7 +1,7 @@
 package testgen
 
 import (
-	"html/template"
+	"text/template"
 )
 
 type Val = string
