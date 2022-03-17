@@ -55,7 +55,6 @@ func getFuzzAppsFuncDecl(pkg *packages.Package, fd *ast.FuncDecl, tmplData *mode
 		// Generic
 		// types.TypeParam
 		// for typ, vals := range typetable.TypeVals {
-
 		// }
 	} else if len(fd.Type.Params.List) != 0 {
 		argcands := make([][]model.Val, len(fd.Type.Params.List))
@@ -89,11 +88,11 @@ func GetTemplDataFromPackages(pkgnames []string) (*model.TemplData, error) {
 		return nil, err
 	}
 	// TODO:単一packageを仮定
-	templData := &model.TemplData{PkgName: pkgs[0].Name}
+	// とれない...
+	templData := &model.TemplData{PkgName: "test"}
 	for _, pkg := range pkgs {
 		// templData := &model.TemplData{PkgName: pkg.Name}
 		for _, f := range pkg.Syntax {
-			ast.Print(pkg.Fset, f)
 			for _, dec := range f.Decls {
 				switch dec := dec.(type) {
 				case *ast.FuncDecl:

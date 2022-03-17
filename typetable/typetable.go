@@ -8,7 +8,7 @@ import "go/types"
 // Pointer, Interfaceは実際に取ってきてから作らないと厳しそう
 var TypeVals map[types.Type][]string = map[types.Type][]string{
 	types.Typ[types.Bool]:   {"true", "false"},
-	types.Typ[types.String]: {""},
+	types.Typ[types.String]: {"\"\"", "hogehogehogehoge"},
 	types.Typ[types.Int]:    {"0", "-2147483648", "2147483647"},
 	types.Typ[types.Int64]:  {"0", "-9223372036854775808", "9223372036854775807"},
 	types.Typ[types.Uint]:   {"0", "18446744073709551615"},

@@ -27,7 +27,8 @@ import (
 {{range $gf := .GenFuncs}}func Test{{$gf.FName}}(t *testing.T) {
 	{{range $app := $gf.Apps}}{{$pkg}}.{{$gf.FName}} {{if lt 0 (len $app.TypeInstances)}} [ {{ createCS $app.TypeInstances}}] {{end}} ({{createCS $app.Args}})
 	{{end}}
-}{{end}}`))
+}
+{{end}}`))
 
 func FormatAndImport(src []byte) (string, error) {
 	srcbytes, err := format.Source(src)

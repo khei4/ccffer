@@ -10,7 +10,7 @@ import (
 
 func main() {
 
-	filename := []string{"./.test"}
+	filename := []string{"./test"}
 	templData, err := info.GetTemplDataFromPackages(filename)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "cannot open %s", filename)
