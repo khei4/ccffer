@@ -40,6 +40,31 @@ func argall(argcands [][]model.Val) [][]model.Val {
 	return args
 }
 
+func typecandsGen(fd *ast.FuncDecl) [][]types.Type {
+	num := len(fd.Type.TypeParams.List)
+	// res := make([][]types.Type, 0, candsnum)
+	argtypes := make([][]types.Type, 1)
+	for i := 0; i < num; i++ {
+		// allocate
+		newargtypes := make([][]types.Type, 0, len(argtypes)*len(typetable.TypeVals))
+		for _, argtype := range argtypes {
+			for typ, _ := range typetable.TypeVals {
+				newargtypes = append(newargtypes, append(argtype, typ))
+			}
+		}
+		argtypes = newargtypes
+	}
+	return argtypes
+}
+
+func types2strings(typs []types.Type) []model.Type {
+	res := make([]model.Type, len(typs))
+	for i, t := range typs {
+		res[i] = t.String()
+	}
+	return res
+}
+
 // 考えられる入力と型を列挙して入れていく
 func getFuzzAppsFuncDecl(pkg *packages.Package, fd *ast.FuncDecl, tmplData *model.TemplData) {
 	sig, _ := pkg.TypesInfo.TypeOf(fd.Name).(*types.Signature)
@@ -53,26 +78,43 @@ func getFuzzAppsFuncDecl(pkg *packages.Package, fd *ast.FuncDecl, tmplData *mode
 
 		// 1. それぞれの型パラメーターに入る型を列挙する.
 		//		1. 型パラメーターに入れられる型の候補を列挙する.
+		typecands := typecandsGen(fd)
+		// TODO: 長さごとにCashに乗せるなりしないとやばそう
 		//		2. 型制約を満たすかどうか判定する
-		// typpnums := len(fd.Type.TypeParams.List)
-		// typecands := typecandsGen()
-		if _, err := types.Instantiate(nil, sig, []types.Type{types.Typ[types.Int]}, true); err != nil {
-			fmt.Println("can't be instantiated by int ")
+		allowedcands := make([][]types.Type, 0)
+
+		for _, cand := range typecands {
+			if _, err := types.Instantiate(nil, sig, cand, true); err != nil {
+				fmt.Printf("%v can't be instantiated by %v\n", name, cand)
+				continue
+			}
+			allowedcands = append(allowedcands, cand)
 		}
-		if _, err := types.Instantiate(nil, sig, []types.Type{types.Typ[types.Bool]}, true); err != nil {
-			fmt.Println("can't be instantiated by bool")
-		}
-		if _, err := types.Instantiate(nil, sig, []types.Type{types.Typ[types.String]}, true); err != nil {
-			fmt.Println("can't be instantiated by string")
+		// 2. 型を固定して, 下と同じ操作
+		for _, typecands := range allowedcands {
+			cur := 0
+			argcands := make([][]model.Val, len(fd.Type.Params.List))
+			for i, field := range fd.Type.Params.List {
+				switch typ := pkg.TypesInfo.TypeOf(field.Type).(type) {
+				case *types.Basic: // basic typeを入れる
+					argcands[i] = typetable.TypeVals[typ]
+				case *types.Pointer: // nil をいれる
+					argcands[i] = []model.Val{"nil"}
+				case *types.Interface: //  nil + TODO
+					argcands[i] = []model.Val{"nil"}
+				case *types.TypeParam:
+					argcands[i] = typetable.TypeVals[typecands[cur]]
+				}
+			}
+			typeInstances := types2strings(typecands)
+			for _, args := range argall(argcands) {
+				gf.Apps = append(gf.Apps, &model.App{
+					TypeInstances: typeInstances,
+					Args:          args,
+				})
+			}
 		}
 
-		// 2. 型を固定して, 下と同じ操作
-		// types.Instantiate()
-		// その型を固定してLoop
-		// Generic
-		// types.TypeParam
-		// for typ, vals := range typetable.TypeVals {
-		// }
 	} else if len(fd.Type.Params.List) != 0 {
 		argcands := make([][]model.Val, len(fd.Type.Params.List))
 		for i, field := range fd.Type.Params.List {
