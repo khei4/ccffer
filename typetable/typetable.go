@@ -1,6 +1,6 @@
 // このType Fuzzingで試す型一覧
 // https://stackoverflow.com/questions/6878590/the-maximum-value-for-an-int-type-in-go
-package main
+package typetable
 
 import "go/types"
 

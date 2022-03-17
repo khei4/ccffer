@@ -3,6 +3,7 @@ package info
 import (
 	"fmt"
 	"go/ast"
+	"go/types"
 
 	"golang.org/x/tools/go/packages"
 )
@@ -53,23 +54,28 @@ func PrintFunctions(info *Info) {
 	}
 }
 
-func classifyFuncDecl(dec ast.Decl, info *Info) {
-	fd := dec.(*ast.FuncDecl)
+func classifyFuncDecl(pkg *packages.Package, fd *ast.FuncDecl, info *Info) {
+	sig, _ := pkg.TypesInfo.TypeOf(fd.Name).(*types.Signature)
+	if sig == nil {
+		return
+	}
 
 	if fd.Type.TypeParams != nil { // TODO: 型引数はあっても, 引数がないのは?
+		// for typ, val := range typetable.TypeVals {
+		// 	// sigの型パラメーターごとにあてはまるものを列挙
+		// 	if
+		// }
 		info.Functions.GenericFuncs = append(info.Functions.GenericFuncs, fd)
 	} else if len(fd.Type.Params.List) != 0 {
 		info.Functions.NonGenericFuncs = append(info.Functions.NonGenericFuncs, fd)
 	} else {
 		info.Functions.NoParamFuncs = append(info.Functions.NoParamFuncs, fd)
 	}
+
 }
 
 // TODO:
-func classifyGenDecl(dec ast.Decl, info *Info) {
-	gd := dec.(*ast.GenDecl)
-	// Specsが一つ以上ある時とは???
-	// →type( ...) が複数あるときっぽい
+func classifyGenDecl(gd *ast.GenDecl, info *Info) {
 	for _, spec := range gd.Specs {
 		switch spec.(type) {
 		case *ast.TypeSpec:
@@ -102,9 +108,9 @@ func GetInfoFromPackages(pkgnames []string) (*Info, error) {
 		for _, f := range pkg.Syntax {
 			ast.Print(pkg.Fset, f)
 			for _, dec := range f.Decls {
-				switch dec.(type) {
+				switch dec := dec.(type) {
 				case *ast.FuncDecl:
-					classifyFuncDecl(dec, info)
+					classifyFuncDecl(pkg, dec, info)
 				case *ast.GenDecl:
 					// TODO: get structs and interfaces
 					classifyGenDecl(dec, info)
