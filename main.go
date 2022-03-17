@@ -5,15 +5,20 @@ import (
 	"os"
 
 	"ccffer/info"
+	"ccffer/testgen"
 )
 
 func main() {
 
 	filename := []string{"./.test"}
-	srcinfo, err := info.GetInfoFromPackages(filename)
+	templData, err := info.GetTemplDataFromPackages(filename)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "cannot open %s", filename)
+		return
 	}
-	info.PrintFunctions(srcinfo)
-	fmt.Print(srcinfo)
+	test, err := testgen.GenTests(templData)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "unexpected error: %s", err)
+	}
+	fmt.Print(test)
 }

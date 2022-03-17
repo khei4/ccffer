@@ -2,21 +2,36 @@ package testgen_test
 
 import (
 	"bytes"
+	"ccffer/model"
 	"ccffer/testgen"
-	"fmt"
 	"testing"
 )
 
 func TestGenTests(t *testing.T) {
-	appint := &testgen.App{[]testgen.Type{"int"}, []testgen.Val{"0"}}
-	appstring := &testgen.App{[]testgen.Type{"string"}, []testgen.Val{`""`}}
-	gf := testgen.GenFunc{FName: "F", Apps: []*testgen.App{appint, appstring}}
-	td := testgen.TemplData{
+	appint := &model.App{TypeInstances: []model.Type{"int"}, Args: []model.Val{"0"}}
+	appstring := &model.App{TypeInstances: []model.Type{"string"}, Args: []model.Val{`""`}}
+	gf := model.GenFunc{FName: "F", Apps: []*model.App{appint, appstring}}
+	td := model.TemplData{
 		PkgName:  "main",
-		GenFuncs: []*testgen.GenFunc{&gf},
+		GenFuncs: []*model.GenFunc{&gf},
 	}
 
 	var testsrc bytes.Buffer
 	testgen.TestTmpl.Execute(&testsrc, td)
-	fmt.Print(testsrc.String())
+	expectedraw := `package main_test
+import (
+        "testing"
+        "main"
+)
+func TestF(t *testing.T) {
+	main.F[int,](0,)
+	main.F[string,]("",)
+}
+`
+
+	expected, _ := testgen.FormatAndImport([]byte(expectedraw))
+	if got, err := testgen.GenTests(&td); got != expected || err != nil {
+		t.Fatalf("%v\n is not \n%v", got, expected)
+	}
+
 }

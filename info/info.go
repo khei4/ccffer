@@ -1,33 +1,14 @@
 package info
 
 import (
+	"ccffer/model"
+	"ccffer/typetable"
 	"fmt"
 	"go/ast"
 	"go/types"
 
 	"golang.org/x/tools/go/packages"
 )
-
-type Funcs struct {
-	GenericFuncs    []*ast.FuncDecl // 型パラメーターを持つ(引数を持つかはわからない)
-	NonGenericFuncs []*ast.FuncDecl // 型パラメーターを持つが引数は持たない
-	NoParamFuncs    []*ast.FuncDecl // 型パラメーターも引数も持たない
-}
-
-// type Structs struct {
-// 	NonGenericStructs
-// 	GenericStructs
-// }
-// type Interfaces struct {
-// 	NonGenericInterfaces
-// 	GenericInterfaces
-// }
-
-type Info struct {
-	Functions Funcs
-	// structs Structs
-	// Interfaces Interfaces
-}
 
 // printFunc prints function's info
 func printFuncDecl(fd *ast.FuncDecl) {
@@ -45,57 +26,61 @@ func printFuncDecl(fd *ast.FuncDecl) {
 	}
 }
 
-func PrintFunctions(info *Info) {
-	funcs := info.Functions
-	for _, funcclass := range [][]*ast.FuncDecl{funcs.GenericFuncs, funcs.NonGenericFuncs, funcs.NoParamFuncs} {
-		for _, gf := range funcclass {
-			printFuncDecl(gf)
+func argall(argcands [][]model.Val) [][]model.Val {
+	args := make([][]model.Val, 1)
+	for _, l := range argcands {
+		newargs := make([][]model.Val, 0)
+		for _, arg := range args {
+			for _, v := range l {
+				newargs = append(newargs, append(arg, v))
+			}
 		}
+		args = newargs
 	}
+	return args
 }
 
-func classifyFuncDecl(pkg *packages.Package, fd *ast.FuncDecl, info *Info) {
+// 考えられる入力と型を列挙して入れていく
+func getFuzzAppsFuncDecl(pkg *packages.Package, fd *ast.FuncDecl, tmplData *model.TemplData) {
 	sig, _ := pkg.TypesInfo.TypeOf(fd.Name).(*types.Signature)
 	if sig == nil {
 		return
 	}
+	var name string = fd.Name.Name
+	gf := &model.GenFunc{FName: name}
+	// 引数が1個以上かつ, Generic
+	if fd.Type.TypeParams != nil && len(fd.Type.Params.List) != 0 {
+		// 型パラメーターに入る型を列挙する.
+		// その型を固定してLoop
+		// Generic
+		// types.TypeParam
+		// for typ, vals := range typetable.TypeVals {
 
-	if fd.Type.TypeParams != nil { // TODO: 型引数はあっても, 引数がないのは?
-		// for typ, val := range typetable.TypeVals {
-		// 	// sigの型パラメーターごとにあてはまるものを列挙
-		// 	if
 		// }
-		info.Functions.GenericFuncs = append(info.Functions.GenericFuncs, fd)
 	} else if len(fd.Type.Params.List) != 0 {
-		info.Functions.NonGenericFuncs = append(info.Functions.NonGenericFuncs, fd)
-	} else {
-		info.Functions.NoParamFuncs = append(info.Functions.NoParamFuncs, fd)
-	}
-
-}
-
-// TODO:
-func classifyGenDecl(gd *ast.GenDecl, info *Info) {
-	for _, spec := range gd.Specs {
-		switch spec.(type) {
-		case *ast.TypeSpec:
-			ts := spec.(*ast.TypeSpec)
-			// Genericな変数, 構造体, Interfaceそれぞれあって
-			// このレベルでパラメータがある
-			// パラメータは別にしてもっとかん?
-			// 一旦Genericな構造体, InterfaceTypeは扱わないことに
-			if ts.TypeParams != nil {
-			}
-			switch ts.Type.(type) {
-			case *ast.StructType:
-			case *ast.InterfaceType:
-			default:
+		argcands := make([][]model.Val, len(fd.Type.Params.List))
+		for i, field := range fd.Type.Params.List {
+			switch typ := pkg.TypesInfo.TypeOf(field.Type).(type) {
+			case *types.Basic: // basic typeを入れる
+				// 本当は全通り入れたい
+				argcands[i] = typetable.TypeVals[typ]
+			case *types.Pointer: // nil をいれる
+				argcands[i] = []model.Val{"nil"}
+			case *types.Interface: //  nil + TODO
+				argcands[i] = []model.Val{"nil"}
 			}
 		}
+		for _, args := range argall(argcands) {
+			gf.Apps = append(gf.Apps, &model.App{TypeInstances: []model.Type{}, Args: args})
+		}
+
+	} else {
 	}
+	tmplData.GenFuncs = append(tmplData.GenFuncs, gf)
+
 }
 
-func GetInfoFromPackages(pkgnames []string) (*Info, error) {
+func GetTemplDataFromPackages(pkgnames []string) (*model.TemplData, error) {
 	cfg := &packages.Config{
 		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo,
 	}
@@ -103,22 +88,23 @@ func GetInfoFromPackages(pkgnames []string) (*Info, error) {
 	if err != nil {
 		return nil, err
 	}
-	info := &Info{}
+	// TODO:単一packageを仮定
+	templData := &model.TemplData{PkgName: pkgs[0].Name}
 	for _, pkg := range pkgs {
+		// templData := &model.TemplData{PkgName: pkg.Name}
 		for _, f := range pkg.Syntax {
 			ast.Print(pkg.Fset, f)
 			for _, dec := range f.Decls {
 				switch dec := dec.(type) {
 				case *ast.FuncDecl:
-					classifyFuncDecl(pkg, dec, info)
+					getFuzzAppsFuncDecl(pkg, dec, templData)
 				case *ast.GenDecl:
 					// TODO: get structs and interfaces
-					classifyGenDecl(dec, info)
 				default:
 				}
 			}
 		}
 	}
 
-	return info, nil
+	return templData, nil
 }

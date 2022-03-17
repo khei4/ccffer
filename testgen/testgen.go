@@ -1,26 +1,14 @@
 package testgen
 
 import (
+	"bytes"
+	"ccffer/model"
+	"fmt"
+	"go/format"
 	"text/template"
+
+	"golang.org/x/tools/imports"
 )
-
-type Val = string
-type Type = string
-
-type App struct {
-	TypeInstances []Type // 型パラメーターの値
-	Args          []Val  // 引数にわたす値
-}
-
-type GenFunc struct {
-	FName string
-	Apps  []*App
-}
-
-type TemplData struct {
-	PkgName  string
-	GenFuncs []*GenFunc
-}
 
 var TestTmpl = template.Must(template.New("gen_test.go").Funcs(template.FuncMap{
 	"createCS": func(ss []string) string {
@@ -30,23 +18,33 @@ var TestTmpl = template.Must(template.New("gen_test.go").Funcs(template.FuncMap{
 			res = append(res, ',')
 		}
 		return string(res)
-	}}).Parse(`
-	{{$pkg := .PkgName}}
-	package {{$pkg}}_test
-
-	import (
-		"testing"
-		"{{$pkg}}"
-	)
-	{{range $gf := .GenFuncs}}
-	func Test{{$gf.FName}}(t *testing.T) {
-		{{range $app := $gf.Apps}}
-			{{$pkg}}.{{$gf.FName}}[{{ createCS $app.TypeInstances}}]({{createCS $app.Args}})
-		{{end}}
-	}
+	}}).Parse(`{{$pkg := .PkgName}}
+package {{$pkg}}_test
+import (
+	"testing"
+	"{{$pkg}}"
+)
+{{range $gf := .GenFuncs}}func Test{{$gf.FName}}(t *testing.T) {
+	{{range $app := $gf.Apps}}{{$pkg}}.{{$gf.FName}} {{if lt 0 (len $app.TypeInstances)}} [ {{ createCS $app.TypeInstances}}] {{end}} ({{createCS $app.Args}})
 	{{end}}
-`))
+}{{end}}`))
 
-func GenTests() {
+func FormatAndImport(src []byte) (string, error) {
+	srcbytes, err := format.Source(src)
+	if err != nil {
+		return "", err
+	}
+	srcbytes, err = imports.Process("", srcbytes, nil)
+	if err != nil {
+		return "", err
+	}
+	return string(srcbytes), nil
+}
+
+func GenTests(td *model.TemplData) (string, error) {
+	var testsrc bytes.Buffer
+	TestTmpl.Execute(&testsrc, td)
+	fmt.Print(testsrc.String())
+	return FormatAndImport(testsrc.Bytes())
 
 }
