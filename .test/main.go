@@ -1,4 +1,4 @@
-package main
+package test
 
 type X interface {
 	~int | ~string

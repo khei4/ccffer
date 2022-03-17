@@ -3,8 +3,8 @@ package info
 import (
 	"fmt"
 	"go/ast"
-	"go/parser"
-	"go/token"
+
+	"golang.org/x/tools/go/packages"
 )
 
 type Funcs struct {
@@ -89,24 +89,30 @@ func classifyGenDecl(dec ast.Decl, info *Info) {
 	}
 }
 
-func GetInfoFromFiles(filename string) (*Info, error) {
-	fset := token.NewFileSet()
-	f, err := parser.ParseFile(fset, filename, nil, parser.ParseComments)
-	if err != nil {
-		return nil, fmt.Errorf("cannot open %s", filename)
+func GetInfoFromPackages(pkgnames []string) (*Info, error) {
+	cfg := &packages.Config{
+		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo,
 	}
-
+	pkgs, err := packages.Load(cfg, pkgnames...)
+	if err != nil {
+		return nil, err
+	}
 	info := &Info{}
-
-	for _, dec := range f.Decls {
-		switch dec.(type) {
-		case *ast.FuncDecl:
-			classifyFuncDecl(dec, info)
-		case *ast.GenDecl:
-			// TODO: get structs and interfaces
-			classifyGenDecl(dec, info)
-		default:
+	for _, pkg := range pkgs {
+		for _, f := range pkg.Syntax {
+			ast.Print(pkg.Fset, f)
+			for _, dec := range f.Decls {
+				switch dec.(type) {
+				case *ast.FuncDecl:
+					classifyFuncDecl(dec, info)
+				case *ast.GenDecl:
+					// TODO: get structs and interfaces
+					classifyGenDecl(dec, info)
+				default:
+				}
+			}
 		}
 	}
+
 	return info, nil
 }

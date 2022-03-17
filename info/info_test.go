@@ -6,22 +6,21 @@ import (
 )
 
 func TestGetInfo(t *testing.T) {
-	// TODO: テストデータ構造体を作る
-	filename := "./.test.go"
-	srcinfo, err := info.GetInfoFromFiles(filename)
+	pkgnames := []string{"../.test"}
+	srcinfo, err := info.GetInfoFromPackages(pkgnames)
 	if err != nil {
-		t.Fatalf("file named %s cannot be open", filename)
+		t.Fatalf("packages cannot be open")
 	}
 	genfs := srcinfo.Functions.GenericFuncs
 	nongenfs := srcinfo.Functions.NonGenericFuncs
 	noparamfs := srcinfo.Functions.NoParamFuncs
-	if len(genfs) != 0 {
-		t.Fatal("wrong number: Generic Functions")
+	if len(genfs) != 1 {
+		t.Fatalf("wrong number: %d Generic Functions", len(genfs))
 	}
-	if len(nongenfs) != 1 {
+	if len(nongenfs) != 0 {
 		t.Fatalf("wrong number: %d Non-Generic Functions", len(nongenfs))
 	}
-	if len(noparamfs) != 3 {
-		t.Fatal("wrong number: No-Param Functions")
+	if len(noparamfs) != 1 {
+		t.Fatalf("wrong number: %d No-Param Functions", len(noparamfs))
 	}
 }
