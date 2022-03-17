@@ -18,7 +18,7 @@ type GenFunc struct {
 }
 
 type TemplData struct {
-	Mod      string
+	PkgName  string
 	GenFuncs []*GenFunc
 }
 
@@ -31,17 +31,17 @@ var TestTmpl = template.Must(template.New("gen_test.go").Funcs(template.FuncMap{
 		}
 		return string(res)
 	}}).Parse(`
-	{{$mod := .Mod}}
-	package {{$mod}}_test
+	{{$pkg := .PkgName}}
+	package {{$pkg}}_test
 
 	import (
 		"testing"
-		"{{$mod}}"
+		"{{$pkg}}"
 	)
 	{{range $gf := .GenFuncs}}
 	func Test{{$gf.FName}}(t *testing.T) {
 		{{range $app := $gf.Apps}}
-			{{$mod}}.{{$gf.FName}}[{{ createCS $app.TypeInstances}}]({{createCS $app.Args}})
+			{{$pkg}}.{{$gf.FName}}[{{ createCS $app.TypeInstances}}]({{createCS $app.Args}})
 		{{end}}
 	}
 	{{end}}

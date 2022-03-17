@@ -12,7 +12,7 @@ func TestGenTests(t *testing.T) {
 	appstring := &testgen.App{[]testgen.Type{"string"}, []testgen.Val{`""`}}
 	gf := testgen.GenFunc{FName: "F", Apps: []*testgen.App{appint, appstring}}
 	td := testgen.TemplData{
-		Mod:      "main",
+		PkgName:  "main",
 		GenFuncs: []*testgen.GenFunc{&gf},
 	}
 
