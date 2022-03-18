@@ -6,7 +6,7 @@ import "go/types"
 
 var TypeVals map[types.Type][]string = map[types.Type][]string{
 	types.Typ[types.Bool]:   {"true", "false"},
-	types.Typ[types.String]: {"\"\"", "\"hogehogehogehoge\""},
+	types.Typ[types.String]: {"\"\""},
 	types.Typ[types.Int]:    {"0", "-2147483648", "2147483647"},
 	types.Typ[types.Int64]: {"0",
 		"-9223372036854775808",
