@@ -4,7 +4,6 @@ package typetable
 
 import "go/types"
 
-// TODO: Empty Interfaceの型がほしい
 var TypeVals map[types.Type][]string = map[types.Type][]string{
 	types.Typ[types.Bool]:                  {"true", "false"},
 	types.Typ[types.String]:                {"\"\"", "\"hogehogehogehoge\""},
@@ -16,6 +15,4 @@ var TypeVals map[types.Type][]string = map[types.Type][]string{
 	types.Typ[types.Float64]:               {"0", "math.NaN()", "math.Inf(0)", "math.Inf(-1)"},
 	types.NewPointer(types.Typ[types.Int]): {"&0", "nil"},
 	types.NewSlice(types.Typ[types.Int]):   {"[]int{}", "nil"},
-	// &types.Pointer{}:        {"nil"},
-	// &types.Slice{}:          {"[]", "nil"},
 }

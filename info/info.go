@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"go/ast"
 	"go/types"
-	"os"
 
 	"golang.org/x/tools/go/packages"
 )
@@ -58,24 +57,18 @@ func getFuzzAppsFuncDecl(pkg *packages.Package, fd *ast.FuncDecl, tmplData *mode
 	}
 	var name string = fd.Name.Name
 	gf := &model.GenFunc{FName: name}
-	// 引数が1個以上かつ, Generic
 	if fd.Type.TypeParams != nil && len(fd.Type.Params.List) != 0 {
-
-		// 1. それぞれの型パラメーターに入る型を列挙する.
-		//		1. 型パラメーターに入れられる型の候補を列挙する.
 		typecands := typecandsGen(fd)
 		// TODO: 長さごとにCashに乗せるなりしないとやばそう
-		//		2. 型制約を満たすかどうか判定する
 		allowedcands := make([][]types.Type, 0)
 
 		for _, cand := range typecands {
 			if _, err := types.Instantiate(nil, sig, cand, true); err != nil {
-				fmt.Fprintf(os.Stderr, "%v can't be instantiated by %v\n", name, cand)
+				// fmt.Fprintf(os.Stderr, "%v can't be instantiated by %v\n", name, cand)
 				continue
 			}
 			allowedcands = append(allowedcands, cand)
 		}
-		// 2. 型を固定して, 下と同じ操作
 		for _, typecands := range allowedcands {
 			cur := 0
 			argcands := make([][]model.Val, len(fd.Type.Params.List))
@@ -103,21 +96,23 @@ func getFuzzAppsFuncDecl(pkg *packages.Package, fd *ast.FuncDecl, tmplData *mode
 	} else if len(fd.Type.Params.List) != 0 {
 		argcands := make([][]model.Val, len(fd.Type.Params.List))
 		for i, field := range fd.Type.Params.List {
-			switch typ := pkg.TypesInfo.TypeOf(field.Type).(type) {
-			case *types.Basic: // basic typeを入れる
-				// 本当は全通り入れたい
+			x := pkg.TypesInfo.TypeOf(field.Type)
+			fmt.Print(x.Underlying())
+			switch typ := pkg.TypesInfo.TypeOf(field.Type).Underlying().(type) {
+			case *types.Basic:
 				argcands[i] = typetable.TypeVals[typ]
-			case *types.Pointer: // nil をいれる
-				// base := typ.Elem()
-				// vals := []model.Val{"nil"}
-				// basetypeで場合分け
+			case *types.Slice:
+				elemType := typ.Elem()
+				empty := "[]" + elemType.String() + "{}"
+				argcands[i] = []model.Val{"nil", empty}
+			case *types.Pointer:
 				argcands[i] = []model.Val{"nil"}
-				// base typeのpointerにする
-			case *types.Interface: //  nil
+			case *types.Interface:
+				// Get Interface value
 				argcands[i] = []model.Val{"nil"}
-				// TODO: Interfaceを満たすパッケージ内の型を持ってくる
-			case *types.Struct: // 再帰的に作らなきゃダメそう
-				panic("broken")
+			case *types.Struct:
+				zeroVal := typ.String() + "{}"
+				argcands[i] = []model.Val{"nil", zeroVal}
 			case *types.TypeParam:
 				panic("broken")
 			}
@@ -134,7 +129,7 @@ func getFuzzAppsFuncDecl(pkg *packages.Package, fd *ast.FuncDecl, tmplData *mode
 
 func GetTemplDataFromPackages(pkgnames []string) (*model.TemplData, error) {
 	cfg := &packages.Config{
-		Mode: packages.NeedName | packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo,
+		Mode: packages.NeedModule | packages.NeedName | packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo,
 	}
 	pkgs, err := packages.Load(cfg, pkgnames...)
 	if err != nil {
@@ -145,7 +140,7 @@ func GetTemplDataFromPackages(pkgnames []string) (*model.TemplData, error) {
 	for _, pkg := range pkgs {
 		// templData := &model.TemplData{PkgName: pkg.Name}
 		for _, f := range pkg.Syntax {
-			// ast.Print(pkg.Fset, f)
+			ast.Print(pkg.Fset, f)
 			for _, dec := range f.Decls {
 				switch dec := dec.(type) {
 				case *ast.FuncDecl:
