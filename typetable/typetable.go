@@ -13,6 +13,6 @@ var TypeVals map[types.Type][]string = map[types.Type][]string{
 	&types.Struct{}:                        {"struct{}{}"},
 	types.Typ[types.Float32]:               {"0", "float32(math.NaN())", "float32(math.Inf(0))", "float32(math.Inf(-1))"},
 	types.Typ[types.Float64]:               {"0", "math.NaN()", "math.Inf(0)", "math.Inf(-1)"},
-	types.NewPointer(types.Typ[types.Int]): {"&0", "nil"},
+	types.NewPointer(types.Typ[types.Int]): {"nil"},
 	types.NewSlice(types.Typ[types.Int]):   {"[]int{}", "nil"},
 }
