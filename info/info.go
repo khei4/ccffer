@@ -5,6 +5,8 @@ import (
 	"ccffer/typetable"
 	"go/ast"
 	"go/types"
+	"strings"
+	"unicode"
 
 	"golang.org/x/tools/go/packages"
 )
@@ -24,7 +26,10 @@ func argall(argcands [][]model.Val) [][]model.Val {
 }
 
 func typecandsGen(fd *ast.FuncDecl) [][]types.Type {
-	num := len(fd.Type.TypeParams.List)
+	num := 0
+	for _, l := range fd.Type.TypeParams.List {
+		num += len(l.Names)
+	}
 	// res := make([][]types.Type, 0, candsnum)
 	argtypes := make([][]types.Type, 1)
 	for i := 0; i < num; i++ {
@@ -50,20 +55,24 @@ func types2strings(typs []types.Type) []model.Type {
 
 // 考えられる入力と型を列挙して入れていく
 func getFuzzAppsFuncDecl(pkg *packages.Package, fd *ast.FuncDecl, tmplData *model.TemplData) {
+	var name string = fd.Name.Name
+
+	if name == "main" || unicode.IsLower([]rune(name)[0]) {
+		return
+	}
+	gf := &model.GenFunc{FName: name}
 	sig, _ := pkg.TypesInfo.TypeOf(fd.Name).(*types.Signature)
 	if sig == nil {
 		return
 	}
-	var name string = fd.Name.Name
-	gf := &model.GenFunc{FName: name}
+
 	if fd.Type.TypeParams != nil && len(fd.Type.Params.List) != 0 {
 		typecands := typecandsGen(fd)
-		// TODO: 長さごとにCashに乗せるなりしないとやばそう
+		// TODO: 長さごとにCashに乗せるなりしないと引数が多い時にやばそう
 		allowedcands := make([][]types.Type, 0)
 
 		for _, cand := range typecands {
 			if _, err := types.Instantiate(nil, sig, cand, true); err != nil {
-				// fmt.Fprintf(os.Stderr, "%v can't be instantiated by %v\n", name, cand)
 				continue
 			}
 			allowedcands = append(allowedcands, cand)
@@ -81,6 +90,7 @@ func getFuzzAppsFuncDecl(pkg *packages.Package, fd *ast.FuncDecl, tmplData *mode
 					argcands[i] = []model.Val{"nil"}
 				case *types.TypeParam:
 					argcands[i] = typetable.TypeVals[typecands[cur]]
+					cur += 1
 				}
 			}
 			typeInstances := types2strings(typecands)
@@ -95,7 +105,9 @@ func getFuzzAppsFuncDecl(pkg *packages.Package, fd *ast.FuncDecl, tmplData *mode
 	} else if len(fd.Type.Params.List) != 0 {
 		argcands := make([][]model.Val, len(fd.Type.Params.List))
 		for i, field := range fd.Type.Params.List {
-			switch typ := pkg.TypesInfo.TypeOf(field.Type).Underlying().(type) {
+			// Underlying?
+			// switch typ := pkg.TypesInfo.TypeOf(field.Type).Underlying().(type) {
+			switch typ := pkg.TypesInfo.TypeOf(field.Type).(type) {
 			case *types.Basic:
 				argcands[i] = typetable.TypeVals[typ]
 			case *types.Slice:
@@ -108,7 +120,11 @@ func getFuzzAppsFuncDecl(pkg *packages.Package, fd *ast.FuncDecl, tmplData *mode
 				argcands[i] = []model.Val{"nil"}
 			case *types.Struct:
 				zeroVal := typ.String() + "{}"
-				argcands[i] = []model.Val{"nil", zeroVal}
+				argcands[i] = []model.Val{zeroVal}
+			case *types.Named:
+				path := strings.Split(typ.String(), "/")
+				zeroVal := path[len(path)-1] + "{}"
+				argcands[i] = []model.Val{zeroVal}
 			case *types.TypeParam:
 				panic("broken")
 			}

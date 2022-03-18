@@ -13,6 +13,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "パターンを指定してください")
 		return
 	}
+	// 与えたパスの下を再帰的にとりたい
 	templData, err := info.GetTemplDataFromPackages(os.Args[1:])
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "cannot open %s", os.Args[1:])
@@ -23,5 +24,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "unexpected error: %s", err)
 		return
 	}
+	fp, err := os.Create(os.Args[1] + "/" + os.Args[1] + "_test.go")
+	fp.WriteString(test)
 	fmt.Print(test)
 }
