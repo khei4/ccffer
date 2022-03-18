@@ -3,7 +3,6 @@ package info
 import (
 	"ccffer/model"
 	"ccffer/typetable"
-	"fmt"
 	"go/ast"
 	"go/types"
 
@@ -96,8 +95,6 @@ func getFuzzAppsFuncDecl(pkg *packages.Package, fd *ast.FuncDecl, tmplData *mode
 	} else if len(fd.Type.Params.List) != 0 {
 		argcands := make([][]model.Val, len(fd.Type.Params.List))
 		for i, field := range fd.Type.Params.List {
-			x := pkg.TypesInfo.TypeOf(field.Type)
-			fmt.Print(x.Underlying())
 			switch typ := pkg.TypesInfo.TypeOf(field.Type).Underlying().(type) {
 			case *types.Basic:
 				argcands[i] = typetable.TypeVals[typ]
@@ -108,7 +105,6 @@ func getFuzzAppsFuncDecl(pkg *packages.Package, fd *ast.FuncDecl, tmplData *mode
 			case *types.Pointer:
 				argcands[i] = []model.Val{"nil"}
 			case *types.Interface:
-				// Get Interface value
 				argcands[i] = []model.Val{"nil"}
 			case *types.Struct:
 				zeroVal := typ.String() + "{}"
@@ -140,13 +136,13 @@ func GetTemplDataFromPackages(pkgnames []string) (*model.TemplData, error) {
 	for _, pkg := range pkgs {
 		// templData := &model.TemplData{PkgName: pkg.Name}
 		for _, f := range pkg.Syntax {
-			ast.Print(pkg.Fset, f)
+			// ast.Print(pkg.Fset, f)
 			for _, dec := range f.Decls {
 				switch dec := dec.(type) {
 				case *ast.FuncDecl:
 					getFuzzAppsFuncDecl(pkg, dec, templData)
 				case *ast.GenDecl:
-					// TODO: get structs and interfaces
+					// TODO: get structs and interfaces and add them to table
 
 				default:
 				}

@@ -3,7 +3,7 @@ package test
 import "strconv"
 
 type X interface {
-	~int | ~string
+	~int
 }
 
 func FG[T X, Y any](v T) {
@@ -29,5 +29,4 @@ func main() {
 	x := 12
 	F([]int{32}, S{hoge: 12, fuga: "hoge"}, &x)
 	FG[int, string](42)
-	FG[string, string]("42")
 }
