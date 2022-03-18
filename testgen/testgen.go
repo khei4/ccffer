@@ -21,7 +21,7 @@ var TestTmpl = template.Must(template.New("gen_test.go").Funcs(template.FuncMap{
 package {{$pkg}}_test
 import (
 	"testing"
-	"{{$pkg}}"
+	"{{.PkgPath}}"
 )
 {{range $gf := .GenFuncs}}func Test{{$gf.FName}}(t *testing.T) {
 	{{range $app := $gf.Apps}}{{$pkg}}.{{$gf.FName}} {{if lt 0 (len $app.TypeInstances)}} [ {{ createCS $app.TypeInstances}}] {{end}} ({{createCS $app.Args}})
@@ -44,7 +44,5 @@ func FormatAndImport(src []byte) (string, error) {
 func GenTests(td *model.TemplData) (string, error) {
 	var testsrc bytes.Buffer
 	TestTmpl.Execute(&testsrc, td)
-	// fmt.Print(testsrc.String())
 	return FormatAndImport(testsrc.Bytes())
-
 }

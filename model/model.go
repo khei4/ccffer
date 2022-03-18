@@ -14,6 +14,7 @@ type GenFunc struct {
 }
 
 type TemplData struct {
+	PkgPath  string
 	PkgName  string
 	GenFuncs []*GenFunc
 }

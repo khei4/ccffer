@@ -6,25 +6,10 @@ import (
 	"fmt"
 	"go/ast"
 	"go/types"
+	"os"
 
 	"golang.org/x/tools/go/packages"
 )
-
-// printFunc prints function's info
-func printFuncDecl(fd *ast.FuncDecl) {
-	var name string = fd.Name.Name
-	fmt.Println("name=", name)
-	var ft ast.FuncType = *fd.Type
-	if ft.TypeParams != nil {
-		fmt.Println("TypeParams=", *ft.TypeParams)
-	}
-	if ft.Params != nil {
-		fmt.Println("argTypes=", *ft.Params)
-	}
-	if ft.Results != nil {
-		fmt.Println("resTypes=", *ft.Results)
-	}
-}
 
 func argall(argcands [][]model.Val) [][]model.Val {
 	args := make([][]model.Val, 1)
@@ -85,7 +70,7 @@ func getFuzzAppsFuncDecl(pkg *packages.Package, fd *ast.FuncDecl, tmplData *mode
 
 		for _, cand := range typecands {
 			if _, err := types.Instantiate(nil, sig, cand, true); err != nil {
-				fmt.Printf("%v can't be instantiated by %v\n", name, cand)
+				fmt.Fprintf(os.Stderr, "%v can't be instantiated by %v\n", name, cand)
 				continue
 			}
 			allowedcands = append(allowedcands, cand)
@@ -123,9 +108,16 @@ func getFuzzAppsFuncDecl(pkg *packages.Package, fd *ast.FuncDecl, tmplData *mode
 				// 本当は全通り入れたい
 				argcands[i] = typetable.TypeVals[typ]
 			case *types.Pointer: // nil をいれる
+				// base := typ.Elem()
+				// vals := []model.Val{"nil"}
+				// basetypeで場合分け
 				argcands[i] = []model.Val{"nil"}
-			case *types.Interface: //  nil + TODO
+				// base typeのpointerにする
+			case *types.Interface: //  nil
 				argcands[i] = []model.Val{"nil"}
+				// TODO: Interfaceを満たすパッケージ内の型を持ってくる
+			case *types.Struct: // 再帰的に作らなきゃダメそう
+				panic("broken")
 			case *types.TypeParam:
 				panic("broken")
 			}
@@ -149,7 +141,7 @@ func GetTemplDataFromPackages(pkgnames []string) (*model.TemplData, error) {
 		return nil, err
 	}
 	// TODO:単一packageを仮定しているので拡張する.
-	templData := &model.TemplData{PkgName: pkgs[0].Name}
+	templData := &model.TemplData{PkgName: pkgs[0].Name, PkgPath: pkgs[0].PkgPath}
 	for _, pkg := range pkgs {
 		// templData := &model.TemplData{PkgName: pkg.Name}
 		for _, f := range pkg.Syntax {
@@ -160,6 +152,7 @@ func GetTemplDataFromPackages(pkgnames []string) (*model.TemplData, error) {
 					getFuzzAppsFuncDecl(pkg, dec, templData)
 				case *ast.GenDecl:
 					// TODO: get structs and interfaces
+
 				default:
 				}
 			}

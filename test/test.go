@@ -10,7 +10,7 @@ func FG[T X, Y any](v T) {
 	println(any(v).(int))
 }
 
-func F(v int, s string, f float32) string {
+func F(v int, s string, f float64) string {
 	return s
 }
 
