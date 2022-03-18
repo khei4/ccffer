@@ -2,9 +2,10 @@ package testgen
 
 import (
 	"bytes"
-	"ccffer/model"
 	"go/format"
 	"text/template"
+
+	"github.com/khei4/ccffer/model"
 
 	"golang.org/x/tools/imports"
 )

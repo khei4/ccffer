@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"ccffer/info"
-	"ccffer/testgen"
+	"github.com/khei4/ccffer/info"
+	"github.com/khei4/ccffer/testgen"
 )
 
 func main() {

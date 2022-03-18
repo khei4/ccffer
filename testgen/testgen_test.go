@@ -2,10 +2,11 @@ package testgen_test
 
 import (
 	"bytes"
-	"ccffer/model"
-	"ccffer/testgen"
 	"fmt"
 	"testing"
+
+	"github.com/khei4/ccffer/model"
+	"github.com/khei4/ccffer/testgen"
 )
 
 func TestGenTests(t *testing.T) {

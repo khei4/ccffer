@@ -1,4 +1,4 @@
-module ccffer
+module github.com/khei4/ccffer
 
 go 1.18
 

@@ -1,12 +1,13 @@
 package info
 
 import (
-	"ccffer/model"
-	"ccffer/typetable"
 	"go/ast"
 	"go/types"
 	"strings"
 	"unicode"
+
+	"github.com/khei4/ccffer/model"
+	"github.com/khei4/ccffer/typetable"
 
 	"golang.org/x/tools/go/packages"
 )
