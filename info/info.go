@@ -83,11 +83,11 @@ func getFuzzAppsFuncDecl(pkg *packages.Package, fd *ast.FuncDecl, tmplData *mode
 			argcands := make([][]model.Val, len(fd.Type.Params.List))
 			for i, field := range fd.Type.Params.List {
 				switch typ := pkg.TypesInfo.TypeOf(field.Type).(type) {
-				case *types.Basic: // basic typeを入れる
+				case *types.Basic:
 					argcands[i] = typetable.TypeVals[typ]
-				case *types.Pointer: // nil をいれる
+				case *types.Pointer:
 					argcands[i] = []model.Val{"nil"}
-				case *types.Interface: //  nil + TODO
+				case *types.Interface:
 					argcands[i] = []model.Val{"nil"}
 				case *types.TypeParam:
 					argcands[i] = typetable.TypeVals[typecands[cur]]
