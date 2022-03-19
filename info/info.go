@@ -12,9 +12,13 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-func argall(argcands [][]model.Val) [][]model.Val {
+// allArgCombinations computes all possible arguments combinations
+// from possible value candidates
+// ex. In: [[1, 2], ["", "hoge"]]
+//     Out: [[1, ""], [2, ""], [1, "hoge"], [2, "hoge"]]
+func allArgCombinations(valueCands [][]model.Val) [][]model.Val {
 	args := make([][]model.Val, 1)
-	for _, l := range argcands {
+	for _, l := range valueCands {
 		newargs := make([][]model.Val, 0)
 		for _, arg := range args {
 			for _, v := range l {
@@ -26,15 +30,25 @@ func argall(argcands [][]model.Val) [][]model.Val {
 	return args
 }
 
-func typecandsGen(fd *ast.FuncDecl) [][]types.Type {
+// getTypeParamNum get a number of typeparameter for given fd *ast.FuncDecl
+func getTypeParamNum(fd *ast.FuncDecl) int {
 	num := 0
 	for _, l := range fd.Type.TypeParams.List {
 		num += len(l.Names)
 	}
-	// res := make([][]types.Type, 0, candsnum)
+	return num
+}
+
+// typecandsGen computes all combination of types for given function declaration
+// from typetables
+// ex. In: 2
+//     Out: [[types.Typ[types.Bool], types.Typ[types.Bool]],
+// 			 ...
+//			[types.NewPointer(types.Typ[types.Int]), types.NewSlice(types.Typ[types.Int])],
+// 			[types.NewSlice(types.Typ[types.Int]),types.NewSlice(types.Typ[types.Int])]]
+func typecandsGen(num int) [][]types.Type {
 	argtypes := make([][]types.Type, 1)
 	for i := 0; i < num; i++ {
-		// allocate
 		newargtypes := make([][]types.Type, 0, len(argtypes)*len(typetable.TypeVals))
 		for _, argtype := range argtypes {
 			for typ, _ := range typetable.TypeVals {
@@ -57,7 +71,7 @@ func types2strings(typs []types.Type) []model.Type {
 // 考えられる入力と型を列挙して入れていく
 func getFuzzAppsFuncDecl(pkg *packages.Package, fd *ast.FuncDecl, tmplData *model.TemplData) {
 	var name string = fd.Name.Name
-
+	// ここはよりよいPublic判定方法があるかな?
 	if name == "main" || unicode.IsLower([]rune(name)[0]) {
 		return
 	}
@@ -68,7 +82,8 @@ func getFuzzAppsFuncDecl(pkg *packages.Package, fd *ast.FuncDecl, tmplData *mode
 	}
 
 	if fd.Type.TypeParams != nil && len(fd.Type.Params.List) != 0 {
-		typecands := typecandsGen(fd)
+		num := getTypeParamNum(fd)
+		typecands := typecandsGen(num)
 		// TODO: 長さごとにCashに乗せるなりしないと引数が多い時にやばそう
 		allowedcands := make([][]types.Type, 0)
 
@@ -95,7 +110,7 @@ func getFuzzAppsFuncDecl(pkg *packages.Package, fd *ast.FuncDecl, tmplData *mode
 				}
 			}
 			typeInstances := types2strings(typecands)
-			for _, args := range argall(argcands) {
+			for _, args := range allArgCombinations(argcands) {
 				gf.Apps = append(gf.Apps, &model.App{
 					TypeInstances: typeInstances,
 					Args:          args,
@@ -106,8 +121,6 @@ func getFuzzAppsFuncDecl(pkg *packages.Package, fd *ast.FuncDecl, tmplData *mode
 	} else if len(fd.Type.Params.List) != 0 {
 		argcands := make([][]model.Val, len(fd.Type.Params.List))
 		for i, field := range fd.Type.Params.List {
-			// Underlying?
-			// switch typ := pkg.TypesInfo.TypeOf(field.Type).Underlying().(type) {
 			switch typ := pkg.TypesInfo.TypeOf(field.Type).(type) {
 			case *types.Basic:
 				argcands[i] = typetable.TypeVals[typ]
@@ -130,7 +143,7 @@ func getFuzzAppsFuncDecl(pkg *packages.Package, fd *ast.FuncDecl, tmplData *mode
 				panic("broken")
 			}
 		}
-		for _, args := range argall(argcands) {
+		for _, args := range allArgCombinations(argcands) {
 			gf.Apps = append(gf.Apps, &model.App{TypeInstances: []model.Type{}, Args: args})
 		}
 
