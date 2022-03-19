@@ -1,6 +1,6 @@
 package test
 
-var m map[interface{}]interface{}
+var m map[any]any = map[any]any{}
 
 func Insert[K, V any](k K, v V) {
 	m[k] = v
