@@ -4,6 +4,7 @@ package typetable
 
 import "go/types"
 
+// TypeVals are candidate types and its values for fuzzing generics
 var TypeVals map[types.Type][]string = map[types.Type][]string{
 	types.Typ[types.Bool]:   {"true", "false"},
 	types.Typ[types.String]: {"\"\""},
@@ -20,4 +21,13 @@ var TypeVals map[types.Type][]string = map[types.Type][]string{
 	types.Typ[types.Float64]:               {"0", "math.NaN()", "math.Inf(0)", "math.Inf(-1)"},
 	types.NewPointer(types.Typ[types.Int]): {"nil"},
 	types.NewSlice(types.Typ[types.Int]):   {"[]int{}", "nil"},
+}
+
+// Types are candidate types for fuzzing generics
+var Types []types.Type = make([]types.Type, 0, len(TypeVals))
+
+func init() {
+	for k := range TypeVals {
+		Types = append(Types, k)
+	}
 }

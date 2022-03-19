@@ -12,22 +12,28 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-// allArgCombinations computes all possible arguments combinations
-// from possible value candidates
-// ex. In: [[1, 2], ["", "hoge"]]
-//     Out: [[1, ""], [2, ""], [1, "hoge"], [2, "hoge"]]
-func allArgCombinations(valueCands [][]model.Val) [][]model.Val {
-	args := make([][]model.Val, 1)
-	for _, l := range valueCands {
-		newargs := make([][]model.Val, 0)
-		for _, arg := range args {
-			for _, v := range l {
-				newargs = append(newargs, append(arg, v))
+// calculate combinations from candidates repeated rep times. For examples
+//		In: [["1", "2"], ["", "hoge"]], 1
+// 		Out: [["1", ""], ["2", ""], ["1", "hoge"], [2, "hoge"]]
+// 		In: typetable.TypeVals, 2
+// 		Out: [[types.Typ[types.Bool], types.Typ[types.Bool]],
+// 				 ...
+//			[types.NewPointer(types.Typ[types.Int]), types.NewSlice(types.Typ[types.Int])],
+// 			[types.NewSlice(types.Typ[types.Int]),types.NewSlice(types.Typ[types.Int])]]
+func constructCombinations[T any](candidates [][]T, rep int) [][]T {
+	combs := make([][]T, 1)
+	for i := 0; i < rep; i++ {
+		for _, l := range candidates {
+			newcombs := make([][]T, 0, len(combs)*len(l))
+			for _, arg := range combs {
+				for _, v := range l {
+					newcombs = append(newcombs, append(arg, v))
+				}
 			}
+			combs = newcombs
 		}
-		args = newargs
 	}
-	return args
+	return combs
 }
 
 // getTypeParamNum get a number of typeparameter for given fd *ast.FuncDecl
@@ -37,27 +43,6 @@ func getTypeParamNum(fd *ast.FuncDecl) int {
 		num += len(l.Names)
 	}
 	return num
-}
-
-// typecandsGen computes all combination of types for given function declaration
-// from typetables
-// ex. In: 2
-//     Out: [[types.Typ[types.Bool], types.Typ[types.Bool]],
-// 			 ...
-//			[types.NewPointer(types.Typ[types.Int]), types.NewSlice(types.Typ[types.Int])],
-// 			[types.NewSlice(types.Typ[types.Int]),types.NewSlice(types.Typ[types.Int])]]
-func typecandsGen(num int) [][]types.Type {
-	argtypes := make([][]types.Type, 1)
-	for i := 0; i < num; i++ {
-		newargtypes := make([][]types.Type, 0, len(argtypes)*len(typetable.TypeVals))
-		for _, argtype := range argtypes {
-			for typ, _ := range typetable.TypeVals {
-				newargtypes = append(newargtypes, append(argtype, typ))
-			}
-		}
-		argtypes = newargtypes
-	}
-	return argtypes
 }
 
 func types2strings(typs []types.Type) []model.Type {
@@ -83,7 +68,7 @@ func getFuzzAppsFuncDecl(pkg *packages.Package, fd *ast.FuncDecl, tmplData *mode
 
 	if fd.Type.TypeParams != nil && len(fd.Type.Params.List) != 0 {
 		num := getTypeParamNum(fd)
-		typecands := typecandsGen(num)
+		typecands := constructCombinations([][]types.Type{typetable.Types}, num)
 		// TODO: 長さごとにCashに乗せるなりしないと引数が多い時にやばそう
 		allowedcands := make([][]types.Type, 0)
 
@@ -110,7 +95,7 @@ func getFuzzAppsFuncDecl(pkg *packages.Package, fd *ast.FuncDecl, tmplData *mode
 				}
 			}
 			typeInstances := types2strings(typecands)
-			for _, args := range allArgCombinations(argcands) {
+			for _, args := range constructCombinations(argcands, 1) {
 				gf.Apps = append(gf.Apps, &model.App{
 					TypeInstances: typeInstances,
 					Args:          args,
@@ -143,7 +128,7 @@ func getFuzzAppsFuncDecl(pkg *packages.Package, fd *ast.FuncDecl, tmplData *mode
 				panic("broken")
 			}
 		}
-		for _, args := range allArgCombinations(argcands) {
+		for _, args := range constructCombinations(argcands, 1) {
 			gf.Apps = append(gf.Apps, &model.App{TypeInstances: []model.Type{}, Args: args})
 		}
 
